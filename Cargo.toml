@@ -1,0 +1,14 @@
+[package]
+name = "mineclearer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+grid = "0.10.0"
+renderer = { git="https://github.com/PaulL48/renderer.git" }
+application-context = { git="https://github.com/PaulL48/application_context.git" }
+winit = "0.28.6"
+wgpu = "0.15"
+lazy_static = "1.4.0"
