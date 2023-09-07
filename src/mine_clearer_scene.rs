@@ -58,16 +58,17 @@ pub struct MineClearerScene {
 
 impl MineClearerScene {
     pub fn new(window: Arc<Mutex<Window>>, renderer: Arc<Mutex<Renderer>>) -> Self {
+        let mut components = MineClearerComponents::new();
+
         {
             let mut renderer = renderer.lock().unwrap();
-            renderer.insert_pipeline(&UI_PIPELINE, ui_render_function);
+            renderer.insert_pipeline(&UI_PIPELINE, ui_render_function).unwrap();
         }
 
-        
         Self {
             window,
             renderer,
-            components: MineClearerComponents::new(),
+            components,
         }
     }
 }
@@ -87,10 +88,6 @@ impl Scene for MineClearerScene {
     }
 
     fn render(&mut self) {
-
+        self.renderer.lock().unwrap().render()
     }
 }
-
-// Note:
-// We could take interpolation to the next level by interpolating color animations on vertices
-

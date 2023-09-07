@@ -1,11 +1,10 @@
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(1) 
 }
 
 @vertex
-fn main() {
+fn vs_main() -> VertexOutput {
     let adjust: mat4x4<f32> = mat4x4<f32>(
         1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
