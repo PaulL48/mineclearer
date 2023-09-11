@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 use application_context::{Scene, SceneState, SceneBuilder, Nanoseconds};
-use bevy_ecs::{world::World, schedule::Schedule, system::Resource};
-use renderer::Renderer;
+use bevy_ecs::{world::World, schedule::Schedule};
+use renderer::{Renderer, BufferedData};
 use winit::window::Window;
-use crate::{component_resources::Time, pipelines::{UI_PIPELINE, ui_render_function}};
+use crate::{component_resources::Time, pipelines::{UI_PIPELINE, ui_render_function}, camera::Camera};
 
 pub struct MineclearSceneBuilder;
 
@@ -54,21 +54,38 @@ pub struct MineClearerScene {
     window: Arc<Mutex<Window>>,
     renderer: Arc<Mutex<Renderer>>,
     components: MineClearerComponents,
+    camera: BufferedData<Camera>,
 }
 
 impl MineClearerScene {
     pub fn new(window: Arc<Mutex<Window>>, renderer: Arc<Mutex<Renderer>>) -> Self {
         let mut components = MineClearerComponents::new();
 
-        {
+        let camera = {
             let mut renderer = renderer.lock().unwrap();
-            renderer.insert_pipeline(&UI_PIPELINE, ui_render_function).unwrap();
-        }
+
+            // Here we would specify the data sources for the pipeline
+            let camera = BufferedData::new(renderer.device(), Camera::new());
+
+            let bindings = vec![
+                vec![
+                    camera.binding_resource()
+                ]
+            ];
+            renderer.insert_pipeline(&UI_PIPELINE, ui_render_function, &bindings).unwrap();
+
+            let mut encoder = renderer.device().create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Camera push encoder")
+            });
+
+            camera
+        };
 
         Self {
             window,
             renderer,
             components,
+            camera
         }
     }
 }

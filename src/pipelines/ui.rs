@@ -1,22 +1,13 @@
 use once_cell::sync::Lazy;
-use renderer::{PipelineConfiguration, PipelineUnit};
-use wgpu::{CommandEncoder, TextureView, CommandBuffer};
+use renderer::{PipelineConfiguration, PipelineUnit, BufferBacked, ModelInstance, AsPod};
+use wgpu::{CommandEncoder, TextureView, CommandBuffer, Queue};
 
-use crate::ui_vertex::UiVertex;
+use crate::{ui_vertex::UiVertex, camera::Camera};
 
 pub static UI_BIND_GROUP_LAYOUTS: Lazy<Vec<Vec<wgpu::BindGroupLayoutEntry>>> = Lazy::new(|| {vec![
     vec![
         // Camera
-        wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            count: None,
-        }
+        Camera::buffer_layout(0),
     ]
 ]});
 
@@ -40,6 +31,7 @@ pub static UI_PIPELINE: Lazy<PipelineConfiguration> = Lazy::new(|| {
 });
 
 pub fn ui_render_function(
+    queue: &mut Queue,
     mut encoder: CommandEncoder,
     view: &TextureView,
     depth_texture: &TextureView,
@@ -72,14 +64,7 @@ pub fn ui_render_function(
         });
 
         render_pass.set_pipeline(&pipeline.pipeline);
-
-        // Here the buffer would need to be written to the queue
-        // 
-
-        render_pass.set_bind_group(0, bind_group, &[]);
-
-        // Push a camera update
-        // Get an orthographic camera
+        render_pass.set_bind_group(0, pipeline.bind_groups().get(0).unwrap(), &[]);
 
         for (model, instances) in &pipeline.render_queue {
             if instances.len() == 0 {
@@ -87,11 +72,14 @@ pub fn ui_render_function(
             }
 
             for mesh in model.meshes() {
-                render_pass.set_bind_group(index, bind_group, offsets)
+                render_pass.set_bind_group(1, model.materials()[mesh.material_index()].bind_group(), &[]);
+                render_pass.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
+                render_pass.set_vertex_buffer(1, instances.buffer().slice(..(std::mem::size_of::<<ModelInstance as AsPod>::Target>() * instances.len()) as u64));
+                render_pass.set_index_buffer(mesh.index_buffer().slice(..), mesh.index_type());
+                render_pass.draw_indexed(0..mesh.index_count(), 0, 0..(instances.len() as u32));
             }
         }
     }
-
     encoder.finish()
 }
 
